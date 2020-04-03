@@ -97,10 +97,21 @@ beginseg
 	include "assets/text/numbers.551"
 endseg
 
+beginseg
+	name	"expansionpak_bg"
+	flags	RAW
+	include "assets/background/expansion_pak.551"
+endseg
+beginseg
+	name	"expansionpak_txt"
+	flags	RAW
+	include "assets/text/expansion_pak_text.551"
+endseg
+
 
 
 beginwave
-	name	"highreso"
+	name	"minesweeper"
 	include	"code"
 	include	"title64"
 	include	"titleName"
@@ -115,4 +126,6 @@ beginwave
 	include	"menutext"
 	include	"pausetext"
 	include	"numbers"
+	include	"expansionpak_bg"
+	include	"expansionpak_txt"
 endwave

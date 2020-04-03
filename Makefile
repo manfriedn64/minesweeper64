@@ -26,7 +26,7 @@ TEXHFILES 	=
 
 HFILES 		= 	localdef.h
 
-CODEFILES   	= 	main.c graphics.c minesweeper.c minesweeper_textures.c
+CODEFILES   	= 	main.c graphics.c minesweeper_main.c minesweeper_controller.c 2dlibrary.c
 
 CODEOBJECTS	=	$(CODEFILES:.c=.o) $(NUSYSLIBDIR)/nusys.o
 

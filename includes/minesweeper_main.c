@@ -1,6 +1,6 @@
 #include  <nusys.h>
 #include "localdef.h"
-#include "minesweeper.h"
+#include "minesweeper_main.h"
 #include <malloc.h>
 
 extern Texture textures[20];

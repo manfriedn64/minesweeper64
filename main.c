@@ -7,7 +7,7 @@
 /*======================================================================*/  
 #include <nusys.h>
 #include "localdef.h"
-#include "minesweeper.h"
+#include "minesweeper_main.h"
 
 
 /*----------------------------------------------------------------------*/
@@ -51,22 +51,23 @@ u16* HighFrameBuf[2] = {
 	(u16*)CFB_HIGH_ADDR1
 };
 
-u32 mainNo;
-void setupHigh(void);
-void setupLow(void);
 static void callback_prenmi();
+static void callbackExpansionPak();
+static void callbackGameTitle();
+static void callbackGameRunning();
+static void callbackGameOver();
 
-extern void graphic(u32 taskNum);
 extern void audioInit(void);
-extern u32 hireso;
 extern int frame_number;
 extern float random;
 
 extern GameState gamestate;
 
 extern char conbuf[40];
-extern char mem_heap[1024*400];
+extern char mem_heap[1024*300];
+extern short expansion_pak;
 
+u32 memory_size;
 
 /*----------------------------------------------------------------------*/
 /*	Game startup. 											*/
@@ -75,7 +76,13 @@ extern char mem_heap[1024*400];
 /*----------------------------------------------------------------------*/
 void mainproc(void* arg)
 {
+	memory_size = osGetMemSize();
+	if (memory_size == 0x00800000)
+		expansion_pak = 1;
+	else
+		expansion_pak = 0;
 	frame_number = 0;
+	gamestate.status = GAME_STATUS_EXPPAK;
 	/* Initialize graphics */
 	nuGfxInit();
 	random = rand();
@@ -84,10 +91,16 @@ void mainproc(void* arg)
 	nuContInit();
 
 	 /* Set VI */
-	osViSetMode(&osViModeTable[OS_VI_NTSC_HAN1]);
+	 if (osTvType == OS_TV_PAL ) {
+		osViSetMode(&osViModeTable[OS_VI_PAL_HAN1]);
+		osViSetYScale(0.833);
+		nuPreNMIFuncSet((NUScPreNMIFunc)callback_prenmi);
+	 }
+	 else if (osTvType == OS_TV_MPAL )
+		osViSetMode(&osViModeTable[OS_VI_MPAL_HAN1]); 
+	else
+		osViSetMode(&osViModeTable[OS_VI_NTSC_HAN1]); 
 	osViSetSpecialFeatures(OS_VI_GAMMA_OFF);
-	//osViSetYScale(0.833);
-	nuPreNMIFuncSet((NUScPreNMIFunc)callback_prenmi);
 	
 	/* Since osViBlack becomes FALSE when the VI mode is changed, */
 	/* set the screen display to OFF again. 					*/
@@ -96,37 +109,33 @@ void mainproc(void* arg)
 	/* Set the frame buffer address */
 	nuGfxSetCfb(HighFrameBuf, 2);
 	
-	/* Set the Z buffer address */
+	/* Set the Z buffer address 
+	We won't use it, but I prefer to set it somewhere it won't hurt if for any reason it comes to be used inadvertently
+	*/
 	nuGfxSetZBuffer((u16*)(ZBUFFER_ADDR));
 	
 	if (InitHeap(mem_heap, sizeof(mem_heap)) == -1)
         return;
-	
-	/* High resolution at the start */
-	mainNo = MAIN_HIGH;
 
 	initGame();
 	
-	
 	/* Game main */
 	while(1){
-	switch(mainNo){
-	case MAIN_HIGH:	/* High resolution */
-		setupHigh();
-		mainNo = MAIN_DUMMY;
-		break;
+		nuGfxTaskAllEndWait();
+		switch (gamestate.status) {
+			case GAME_STATUS_TITLE:
+				nuGfxFuncSet(callbackGameTitle);
+				break;
+			case GAME_STATUS_RUNNING:
+				nuGfxFuncSet(callbackGameRunning);
+				break;
+			case GAME_STATUS_OVER:
+				nuGfxFuncSet(callbackGameOver);
+				break;
+		}
+		readController();
+		nuGfxDisplayOn();
 		
-	case MAIN_LOW: 	/* Low resolution */
-		setupHigh();
-		mainNo = MAIN_DUMMY;
-		break;
-		
-	case MAIN_DUMMY:	/* Dummy */
-		break;
-		
-	default:
-		break;
-	}
 	}
 }
 
@@ -135,20 +144,6 @@ void mainproc(void* arg)
 /*	IN:	Nothing in particular. 								*/
 /*	RET:	None												*/
 /*----------------------------------------------------------------------*/
-void setupHigh(void)
-{
-	/* Wait for all tasks to end */
-	nuGfxTaskAllEndWait();
-	
-	nuDebConClear(0);
-
-	/* Screen display ON */
-	hireso  = 1;
-	
-	/* Register the callback function */
-	nuGfxFuncSet(graphic);
-	nuGfxDisplayOn();
-}
 
 
 void callback_prenmi()
@@ -157,3 +152,56 @@ void callback_prenmi()
 	osViSetYScale(1);
 }
 
+void callbackGameTitle(u32 taskNum) {
+	/* Do not process if the tasks are not finished.  Any reference to "nuGfxTaskSpool" MUST be inside a nuGfxFuncSet callback function. Otherwise hardware crashes */ 
+	if(nuGfxTaskSpool) return;
+	//readController();
+	RCPInit();
+	drawTitle();
+	if (gamestate.menu == GAME_MENU_NEW)
+		drawMenuNew();
+	RCPEnd();
+}
+
+void callbackExpansionPak() {
+	/* Do not process if the tasks are not finished.  Any reference to "nuGfxTaskSpool" MUST be inside a nuGfxFuncSet callback function. Otherwise hardware crashes */ 
+	if(nuGfxTaskSpool) return;
+	RCPInit();
+	drawExpansionPak();
+	RCPEnd();
+		
+	
+}
+
+void callbackGameRunning() {
+	/* Do not process if the tasks are not finished.  Any reference to "nuGfxTaskSpool" MUST be inside a nuGfxFuncSet callback function. Otherwise hardware crashes */ 
+	if(nuGfxTaskSpool) return;
+	//readController();
+	RCPInit();
+	drawTiles();
+	drawCursor();
+	switch (gamestate.menu) {
+		case GAME_MENU_PAUSE:
+			drawMenuPause();
+			break;
+		case GAME_MENU_NEW:
+			drawMenuNew();
+			break;
+		case GAME_MENU_CREDITS:
+			drawMenuCredits();
+			break;
+	}
+	RCPEnd();
+}
+
+void callbackGameOver() {
+	/* Do not process if the tasks are not finished.  Any reference to "nuGfxTaskSpool" MUST be inside a nuGfxFuncSet callback function. Otherwise hardware crashes */ 
+	if(nuGfxTaskSpool) return;
+	//readController();
+	RCPInit();
+
+	drawTiles();
+	if (gamestate.menu == GAME_MENU_NEW)
+		drawMenuNew();
+	RCPEnd();
+}

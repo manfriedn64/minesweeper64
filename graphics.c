@@ -8,25 +8,16 @@
 #include <nusys.h>
 #include <PR/gs2dex.h>
 #include "localdef.h"
-#include "minesweeper.h"
+#include "2dlibrary.h"
+#include "minesweeper_main.h"
+#include "minesweeper_controller.h"
 
 #define SCREEN_SIZE_LOW		0
 #define SCREEN_SIZE_HIGH	1
-#define GFX_LIST_NUM		3
+#define GFX_LIST_NUM		1
 #define GFX_LIST_SIZE		16384
 #define OBJ_LIST_SIZE		100
 #define SPRITE_LIST_SIZE	3700
-
-
-typedef struct st_Display {
-	u32	width;
-	u32	high;
-}  ScreenSize;
-
-ScreenSize screen[] = {
-	{ 320, 240},
-	{ 640, 480}
-};
 
 Gfx rdpInit_dl[] = {
 	gsDPPipeSync(),
@@ -70,47 +61,32 @@ u32	gfxListCnt = 0;
 Gfx*	gfxListPtr;
 Gfx*	gfxListStartPtr;
 
-u32 	hireso;
 extern u32 mainNo;
 
 /*----------------------------------------------------------------------*/
 /*	Clear the frame buffer. 								*/
 /*	IN:	**glist_ptr										  */
-/*		screen		Screen size 					  	*/
 /*			SCREEN_SIZE_LOW	 0							*/
 /*			SCREEN_SIZE_HIGH 1					  		*/
 /*	RET:	None										   	*/
 /*----------------------------------------------------------------------*/
-void gfxClearCfb(u32 size)
+void gfxClearCfb()
 {
-	ScreenSize* screenPtr;
-	
-	screenPtr = &screen[size];
 
 	gSPSegment(gfxListPtr++, 0, 0x0);
 
 	gDPSetCycleType(gfxListPtr++, G_CYC_FILL);
 	
-	/* Clear the Z buffer. */
-	gDPSetDepthImage(gfxListPtr++, OS_K0_TO_PHYSICAL(nuGfxZBuffer));
-	
-	gDPSetColorImage(gfxListPtr++, G_IM_FMT_RGBA, G_IM_SIZ_16b,
-			 screenPtr->width,
-			 OS_K0_TO_PHYSICAL(nuGfxZBuffer));
-	gDPSetFillColor(gfxListPtr++,(GPACK_ZDZ(G_MAXFBZ,0) << 16 |
-				  GPACK_ZDZ(G_MAXFBZ,0)));
-	gDPFillRectangle(gfxListPtr++, 0, 0, screen->width-1, screenPtr->high-1);
-
 	gDPPipeSync(gfxListPtr++);
 
 
 	gDPSetColorImage(gfxListPtr++, G_IM_FMT_RGBA, G_IM_SIZ_16b,
-			 screenPtr->width,
+			 my2dlibrary.width,
 			 OS_K0_TO_PHYSICAL(nuGfxCfb_ptr)); 
 	gDPSetFillColor(gfxListPtr++, (GPACK_RGBA5551(gamestate.backgroundColor.red, gamestate.backgroundColor.green, gamestate.backgroundColor.blue, 1) << 16
 					 | GPACK_RGBA5551(gamestate.backgroundColor.red, gamestate.backgroundColor.green, gamestate.backgroundColor.blue, 1)));
 	gDPFillRectangle(gfxListPtr++, 0, 0,
-			 screenPtr->width-1, screenPtr->high - 1);
+			 my2dlibrary.width-1, my2dlibrary.height - 1);
 	gDPPipeSync(gfxListPtr++);
 
 }
@@ -124,8 +100,6 @@ void gfxListBufferChange(void)
 {
 	gfxListStartPtr = &gfxListBuf[gfxListCnt][0];
 	gfxListPtr = gfxListStartPtr;
-	gfxListCnt++;
-	gfxListCnt %= GFX_LIST_NUM;
 	return;
 }
 
@@ -204,29 +178,15 @@ uObjSprite* getNextSprite()
 		return 0;
 }
 
-/*----------------------------------------------------------------------*/
-/*	High resolution display							  	*/
-/*	IN:	taskNum	Number of tasks remaining				*/
-/*	RET:	None										  	*/
-/*----------------------------------------------------------------------*/
-void graphic(u32 taskNum)
-{
-	/* Do not process if the tasks are not finished. */ 
-	if(nuGfxTaskSpool) return;
-	
+void RCPInit() {
+	my2dlibrary.currentTextureInTMEM  = NULL;
 	/* Set the display list buffer. */
 	gfxListBufferChange();
 	gSPDisplayList(gfxListPtr++, rdpInit_dl);
     gDPSetDepthSource(gfxListPtr++, G_ZS_PRIM);
 	/* Clear the screen. */
-	gfxClearCfb(hireso);
+	gfxClearCfb();
 
-	/* end top-level display list */
-	gDPFullSync(gfxListPtr++);
-	gSPEndDisplayList(gfxListPtr++);
-	
-	nuGfxTaskStart(gfxListStartPtr, gfxListPtr - gfxListStartPtr, NU_GFX_UCODE_S2DEX,NU_SC_NOSWAPBUFFER);
-	gfxListBufferChange();
 	
 	/* before drawing any sprite, first clear / init the list of uObjBg that we will be using */
 	objListClear();
@@ -239,38 +199,10 @@ void graphic(u32 taskNum)
 	
 	/* now run all the drawing sprite functions */
 	drawFullBackGround(gamestate.background, -1, -1);
-	switch (gamestate.status) {
-		case GAME_STATUS_TITLE:
-			drawTitle();
-			break;
-		case GAME_STATUS_RUNNING:
-			drawTiles();
-			drawCursor();
-			break;
-		case GAME_STATUS_OVER:
-			drawTiles();
-			break;
-	}
-	switch (gamestate.menu) {
-		case GAME_MENU_PAUSE:
-			drawMenuPause();
-			break;
-		case GAME_MENU_NEW:
-			drawMenuNew();
-			break;
-		case GAME_MENU_CREDITS:
-			drawMenuCredits();
-			break;
-	}
+	//nuDebConClear(0);
+}
 
-	/*if (gamestate.status == 0) {
-		drawTitle();
-	}
-	if (gamestate.status > 0) {
-		drawTiles();
-		
-		drawCursor();
-	}*/
+void RCPEnd() {
 	gDPFullSync(gfxListPtr++);
 	
 	/* end top-level display list */
@@ -288,77 +220,9 @@ void graphic(u32 taskNum)
 	nuDebConDisp(NU_SC_NOSWAPBUFFER);
 	
 	nuDebTaskPerfBar1(1, 480, NU_SC_SWAPBUFFER);
+	drawDebug();
 	
-	nuDebConTextAttr(0, NU_DEB_CON_ATTR_BLINK);
-	nuDebConTextColor(0, NU_DEB_CON_TEXT_RED);
-	nuDebConTextPos(0, 17,0);
-	nuDebConPuts(0, "Running");
-	nuDebConTextAttr(0, NU_DEB_CON_ATTR_NORMAL);
-	
-	
-	
-	nuDebConTextPos(0,3,21);
-	sprintf(conbuf, "End of code : 0x%X", _codeSegmentEnd);
-	nuDebConCPuts(0, conbuf);
-	nuDebConTextPos(0,3,22);
-	sprintf(conbuf, "BACKGROUND_ADDRESS : 0x%X", BACKGROUND_ADDRESS);
-	nuDebConCPuts(0, conbuf);
-	nuDebConTextPos(0,3,23);
-	sprintf(conbuf, "ZBUFFER : 0x%X", ZBUFFER_ADDR);
-	nuDebConCPuts(0, conbuf);
-	nuDebConTextPos(0,3,24);
-	sprintf(conbuf, "FBUFFER start : 0x%X", CFB_HIGH_ADDR0);
-	nuDebConCPuts(0, conbuf);
-	nuDebConTextPos(0,3,25);
-	sprintf(conbuf, "FBUFFER end : 0x%X", AUDIO_HEAP_ADDR);
-	nuDebConCPuts(0, conbuf);
-	/*
-	nuDebConTextPos(0,3,26);
-	sprintf(conbuf, "Frame Number : %d", frame_number);
-	nuDebConCPuts(0, conbuf);
-	nuDebConTextPos(0,3,27);
-	sprintf(conbuf, "Random : %f", random);
-	nuDebConCPuts(0, conbuf);
-	nuDebConTextPos(0,3,28);
-	sprintf(conbuf, "Seed : %d", osGetCount() % 10000000);
-	nuDebConCPuts(0, conbuf);
-	*/
-	
-	
-	/*nuDebConTextPos(0,3,28);
-	sprintf(conbuf, "Gfx : %d", sizeof(Gfx));
-	nuDebConCPuts(0, conbuf);*/
-	/*nuDebConTextPos(0,3,10);
-	sprintf(conbuf, "gfxList Pointer : %X", gfxListPtr);
-	nuDebConCPuts(0, conbuf);
-	nuDebConTextPos(0,3,11);
-	sprintf(conbuf, "gfxList Starter : %X", &gfxListBuf[gfxListCnt-1][0]);
-	nuDebConCPuts(0, conbuf);*/
-	/*nuDebConTextPos(0,3,28);
-	sprintf(conbuf, "mem_heap : 0x%X", &mem_heap);
-	nuDebConCPuts(0, conbuf);*/
-	/*
-	nuDebConTextPos(0,25,5);
-	sprintf(conbuf, "Cursor X : %d   ", gamestate.cursorX);
-	nuDebConCPuts(0, conbuf);
-	nuDebConTextPos(0,25,6);
-	sprintf(conbuf, "Cursor Y : %d   ", gamestate.cursorY);
-	nuDebConCPuts(0, conbuf);
-	nuDebConTextPos(0,25,7);
-	sprintf(conbuf, "Case X   : %d   ", gamestate.caseX);
-	nuDebConCPuts(0, conbuf);
-	nuDebConTextPos(0,25,8);
-	sprintf(conbuf, "Case Y   : %d   ", gamestate.caseY);
-	nuDebConCPuts(0, conbuf);
-	
-	nuDebConTextPos(0,25,9);
-	sprintf(conbuf, "Status   : %d   ", gamestate.status);
-	nuDebConCPuts(0, conbuf);
-	nuDebConTextPos(0,25,10);
-	sprintf(conbuf, "Menu     : %d   ", gamestate.menu);
-	nuDebConCPuts(0, conbuf);*/
-	
-	readController();
 	frame_number++;
 }
+
 
