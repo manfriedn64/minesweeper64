@@ -7,6 +7,7 @@ void controllerPause() ;
 void controllerCredits();
 void controllerTitle() ;
 void controllerGameOver();
+void controllerExpansionPak();
 void readController();
 
 #endif /* _MINESWEEPER_CONTROLLER_ */

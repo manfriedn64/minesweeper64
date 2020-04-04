@@ -1,3 +1,8 @@
+/*======================================================================*/
+/*	File : minesweeper_main.h		                                    */
+/*  defines our game's structures and global variables                  */
+/*======================================================================*/  
+
 #ifndef _MINESWEEPER_
 #define _MINESWEEPER_
 
@@ -16,21 +21,22 @@
 #define NUMBER_7		7
 #define NUMBER_8		8
 #define NUMBER_9		9
-#define TEXT_WIDTH          0
-#define TEXT_HEIGHT         1
-#define TEXT_MINES          2
-#define TEXT_RESUME         3
-#define TEXT_RESTART        4
-#define TEXT_NEWGAME        5
-#define TEXT_REVEAL         6
-#define TEXT_CREDITS        7
-#define TEXT_MENU_NEW       8
-#define TEXT_MENU_PAUSE     9
-#define BUTTON_UP	        0
-#define BUTTON_DOWN	        1
-#define BUTTON_EMPTY        2
-#define BUTTON_CHECK        3
-#define BUTTON_LARGE        4
+#define TEXT_EXPANSIONPAK     0
+#define TEXT_WIDTH            0
+#define TEXT_HEIGHT           1
+#define TEXT_MINES            2
+#define TEXT_RESUME           3
+#define TEXT_RESTART          4
+#define TEXT_NEWGAME          5
+#define TEXT_REVEAL           6
+#define TEXT_CREDITS          7
+#define TEXT_MENU_NEW         8
+#define TEXT_MENU_PAUSE       9
+#define BUTTON_UP	          0
+#define BUTTON_DOWN	          1
+#define BUTTON_EMPTY          2
+#define BUTTON_CHECK          3
+#define BUTTON_LARGE          4
 
 
 typedef struct {

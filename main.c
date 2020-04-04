@@ -9,43 +9,6 @@
 #include "localdef.h"
 #include "minesweeper_main.h"
 
-
-/*----------------------------------------------------------------------*/
-/*	Memory mapping 	*/
-/*	 0x80000000 +------------------+ */
-/*				|      System      | */
-/*   0x80000400 |------------------| */
-/*				|                  | */
-/*				| Collision-Buffer | */
-/*				|                  | */
-/*   0x80025c00 |------------------| */
-/*				|                  | */
-/*				|       Code       | */
-/*				|                  | */
-/*   0x800FB050 |------------------| */
-/*				|                  | */
-/*				|       Data       | */
-/*				|                  | */
-/*   0x804A2370 |------------------| */
-/*				|                  | */
-/*				|      Empty       | */
-/*				|                  | */
-/*   0x805BE000 |------------------| */
-/*				|                  | */
-/*				|     Z-Buffer     | */
-/*				|                  | */
-/*   0x08654000 |------------------| */
-/*				|                  | */
-/*				|   Frame-Buffer   | */
-/*				|                  | */
-/*   0x80780000 |------------------| */
-/*				|                  | */
-/*				|    Audio-Heap    | */
-/*				|                  | */
-/*   0x003FFFFF |------------------| */
-/*----------------------------------------------------------------------*/
-
-/* High resolution frame buffer address array. */
 u16* HighFrameBuf[2] = {
 	(u16*)CFB_HIGH_ADDR0,
 	(u16*)CFB_HIGH_ADDR1
@@ -57,7 +20,6 @@ static void callbackGameTitle();
 static void callbackGameRunning();
 static void callbackGameOver();
 
-extern void audioInit(void);
 extern int frame_number;
 extern float random;
 
@@ -65,9 +27,8 @@ extern GameState gamestate;
 
 extern char conbuf[40];
 extern char mem_heap[1024*300];
-extern short expansion_pak;
 
-u32 memory_size;
+extern u32 memory_size;
 
 /*----------------------------------------------------------------------*/
 /*	Game startup. 											*/
@@ -76,13 +37,10 @@ u32 memory_size;
 /*----------------------------------------------------------------------*/
 void mainproc(void* arg)
 {
+	// expansion pak detection is useless as long as memory usage is lower that 4MB. But I wanted to do it anyway.
 	memory_size = osGetMemSize();
-	if (memory_size == 0x00800000)
-		expansion_pak = 1;
-	else
-		expansion_pak = 0;
 	frame_number = 0;
-	gamestate.status = GAME_STATUS_EXPPAK;
+	
 	/* Initialize graphics */
 	nuGfxInit();
 	random = rand();
@@ -117,12 +75,17 @@ void mainproc(void* arg)
 	if (InitHeap(mem_heap, sizeof(mem_heap)) == -1)
         return;
 
-	initGame();
+	//initGame();
+	initExpansionPak();
+	gamestate.status = GAME_STATUS_EXPPAK;
 	
 	/* Game main */
 	while(1){
 		nuGfxTaskAllEndWait();
 		switch (gamestate.status) {
+			case GAME_STATUS_EXPPAK:
+				nuGfxFuncSet(callbackExpansionPak);
+				break;
 			case GAME_STATUS_TITLE:
 				nuGfxFuncSet(callbackGameTitle);
 				break;
@@ -155,7 +118,6 @@ void callback_prenmi()
 void callbackGameTitle(u32 taskNum) {
 	/* Do not process if the tasks are not finished.  Any reference to "nuGfxTaskSpool" MUST be inside a nuGfxFuncSet callback function. Otherwise hardware crashes */ 
 	if(nuGfxTaskSpool) return;
-	//readController();
 	RCPInit();
 	drawTitle();
 	if (gamestate.menu == GAME_MENU_NEW)
@@ -169,14 +131,11 @@ void callbackExpansionPak() {
 	RCPInit();
 	drawExpansionPak();
 	RCPEnd();
-		
-	
 }
 
 void callbackGameRunning() {
 	/* Do not process if the tasks are not finished.  Any reference to "nuGfxTaskSpool" MUST be inside a nuGfxFuncSet callback function. Otherwise hardware crashes */ 
 	if(nuGfxTaskSpool) return;
-	//readController();
 	RCPInit();
 	drawTiles();
 	drawCursor();
@@ -197,7 +156,6 @@ void callbackGameRunning() {
 void callbackGameOver() {
 	/* Do not process if the tasks are not finished.  Any reference to "nuGfxTaskSpool" MUST be inside a nuGfxFuncSet callback function. Otherwise hardware crashes */ 
 	if(nuGfxTaskSpool) return;
-	//readController();
 	RCPInit();
 
 	drawTiles();

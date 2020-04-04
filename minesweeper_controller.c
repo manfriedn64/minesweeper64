@@ -238,16 +238,23 @@ void controllerGameOver() {
 		controllerNewGame();		
 }
 
+void controllerExpansionPak() {
+	if (contData[0].trigger & START_BUTTON) 
+		initGame();
+}
+
 void readController() {
 	/* Read the controller data. */
 	nuContDataGetExAll(contData);
 	// start a new game
 	if (gamestate.status == GAME_STATUS_RUNNING)
 		controllerInGame();
-	if (gamestate.status == GAME_STATUS_TITLE)
+	else if (gamestate.status == GAME_STATUS_TITLE)
 		controllerTitle();
-	if (gamestate.status == GAME_STATUS_OVER) 
+	else if (gamestate.status == GAME_STATUS_OVER) 
 		controllerGameOver();
+	else if (gamestate.status == GAME_STATUS_EXPPAK) 
+		controllerExpansionPak();
 	// debug mode
 	if(contData[0].trigger & Z_TRIG)
 		if (gamestate.debug) {

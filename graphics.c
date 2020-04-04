@@ -10,7 +10,6 @@
 #include "localdef.h"
 #include "2dlibrary.h"
 #include "minesweeper_main.h"
-#include "minesweeper_controller.h"
 
 #define SCREEN_SIZE_LOW		0
 #define SCREEN_SIZE_HIGH	1
@@ -197,7 +196,7 @@ void RCPInit() {
 	gDPSetCycleType(gfxListPtr++, G_CYC_COPY);
 	gDPSetTextureFilter(gfxListPtr++, G_TF_POINT);
 	
-	/* now run all the drawing sprite functions */
+	/* We always have a background to draw, so let's do it right now */
 	drawFullBackGround(gamestate.background, -1, -1);
 	//nuDebConClear(0);
 }

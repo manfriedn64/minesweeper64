@@ -98,12 +98,12 @@ beginseg
 endseg
 
 beginseg
-	name	"expansionpak_bg"
+	name	"expansionpakBg"
 	flags	RAW
 	include "assets/background/expansion_pak.551"
 endseg
 beginseg
-	name	"expansionpak_txt"
+	name	"expansionpakTxt"
 	flags	RAW
 	include "assets/text/expansion_pak_text.551"
 endseg
@@ -126,6 +126,6 @@ beginwave
 	include	"menutext"
 	include	"pausetext"
 	include	"numbers"
-	include	"expansionpak_bg"
-	include	"expansionpak_txt"
+	include	"expansionpakBg"
+	include	"expansionpakTxt"
 endwave

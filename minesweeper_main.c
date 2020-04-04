@@ -1,12 +1,47 @@
+/*======================================================================*/
+/*	File : minesweeper_main.c		                                    */
+/*  as its name suppose it to be, it's the main entry point for the     */
+/*  game. It contains the game's logic.  */
+/*======================================================================*/  
+
 #include  <nusys.h>
 #include "localdef.h"
 #include "minesweeper_main.h"
 #include "2dlibrary.h"
 #include <malloc.h>
 
-extern Texture textures[20];
+//extern Texture textures[20];
 extern GameState gamestate;
 
+
+void initExpansionPak() {
+	int i;
+	initMy2DLibrary(640, 480);
+	textures[0].romStart	= (u32)_expansionpakBgSegmentRomStart;
+	textures[0].romEnd		= (u32)_expansionpakBgSegmentRomEnd;
+	textures[0].pointer32	= (u32*)BACKGROUND_ADDRESS;
+	textures[0].width		= 640;
+	textures[0].height		= 480;
+	
+	textures[1].romStart	= (u32)_expansionpakTxtSegmentRomStart;
+	textures[1].romEnd		= (u32)_expansionpakTxtSegmentRomEnd;
+	textures[1].pointer32	= (u32*)BACKGROUND_ADDRESS-(textures[1].romEnd-textures[1].romStart);
+	textures[1].width		= 304;
+	textures[1].height		= 122;
+	
+	for (i = 0; i <= 1; i++) {
+		textures[i].pointer64	= (u64*)textures[i].pointer32;
+		textures[i].romSize = textures[i].romEnd - textures[i].romStart;
+		nuPiReadRom(textures[i].romStart, textures[i].pointer32, textures[i].romSize);
+	}
+	gamestate.backgroundColor	= (Rgb){160, 240, 216};
+	gamestate.menu = GAME_MENU_NONE; 
+	gamestate.cursorX = 1;
+	gamestate.cursorY = 1;
+	gamestate.debug = False;
+	gamestate.background	= &textures[0];
+	gamestate.text[TEXT_EXPANSIONPAK]		= (Coordinates){0,  0, &textures[1],   304, 61};
+}
 
 /*
 	Initiate graphical elements common within all themes
@@ -160,7 +195,7 @@ void initGame() {
 		for (y = 0; y < BOARD_MAX_HEIGHT; y++) 
 			gamestate.board.items[y][x] = (Item){0, 0, 0, 0};
 	gamestate.allPanels = (Panel *) mt_malloc(BOARD_MAX_WIDTH * BOARD_MAX_HEIGHT * sizeof(Panel));
-	gamestate.debug = True;
+	gamestate.debug = False;
 }
 
 
@@ -402,6 +437,17 @@ void drawTile(int x, int y, Item* value) {
 }
 
 
+void drawExpansionPak() {
+	/*drawFullBackGround(gamestate.title64, -1, -1);
+	drawFullBackGround(gamestate.titleName, -1, -1);*/
+	//drawBackGroundCoordinates(&gamestate.text[TEXT_EXPANSIONPAK], -1, -1, 0);
+	if (memory_size == 0x00800000)
+		drawBackGroundCoordinates(&gamestate.text[TEXT_EXPANSIONPAK], -1, -1, 1);
+	else
+		drawBackGroundCoordinates(&gamestate.text[TEXT_EXPANSIONPAK], -1, -1, 0);
+	//drawFullBackGround(&textures[1], -1, -1);
+}
+
 void drawTitle() {
 	drawFullBackGround(gamestate.title64, -1, -1);
 	drawFullBackGround(gamestate.titleName, -1, -1);
@@ -417,15 +463,18 @@ void drawTiles() {
 }
 
 
+/*
+	WARNING : somehow it seems to crash the game is activated while board size is big
+	funny to see debug mode to induce a bug :) I guess there is a good reason.
+*/
 void drawDebug() {
 	if (gamestate.debug)  {
 		nuDebConTextAttr(0, NU_DEB_CON_ATTR_BLINK);
-		nuDebConTextColor(0, NU_DEB_CON_TEXT_RED);
-		nuDebConTextPos(0, 17,0);
+		nuDebConTextColor(0, NU_DEB_CON_TEXT_WHITE);
+		nuDebConTextPos(0, 17,1);
 		nuDebConPuts(0, "Running");
 		nuDebConTextAttr(0, NU_DEB_CON_ATTR_NORMAL);
-		
-		
+	
 		
 		nuDebConTextPos(0,3,21);
 		sprintf(conbuf, "End of code : 0x%X", _codeSegmentEnd);
@@ -459,15 +508,6 @@ void drawDebug() {
 		nuDebConTextPos(0,3,4);
 		sprintf(conbuf, "TV Type : %d      ", osTvType);
 		nuDebConCPuts(0, conbuf);
-		/*nuDebConTextPos(0,3,10);
-		sprintf(conbuf, "gfxList Pointer : %X", gfxListPtr);
-		nuDebConCPuts(0, conbuf);
-		nuDebConTextPos(0,3,11);
-		sprintf(conbuf, "gfxList Starter : %X", &gfxListBuf[gfxListCnt-1][0]);
-		nuDebConCPuts(0, conbuf);*/
-		/*nuDebConTextPos(0,3,28);
-		sprintf(conbuf, "mem_heap : 0x%X", &mem_heap);
-		nuDebConCPuts(0, conbuf);*/
 		
 		nuDebConTextPos(0,25,5);
 		sprintf(conbuf, "Cursor X : %d   ", gamestate.cursorX);
