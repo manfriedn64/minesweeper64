@@ -1,9 +1,10 @@
 # MineSweeper 64
 
-![title screen](https://github.com/manfriedn64/minesweeper64/screenshots/title.png)
-![menu screen](https://github.com/manfriedn64/minesweeper64/screenshots/menu.png)
-![in game screen](https://github.com/manfriedn64/minesweeper64/screenshots/game.png)
-![game over screen](https://github.com/manfriedn64/minesweeper64/screenshots/lose.png)
+![title screen](https://github.com/manfriedn64/minesweeper64/blob/master/screenshots/title.png?raw=true)
+![menu screen](https://github.com/manfriedn64/minesweeper64/blob/master/screenshots/menu.png?raw=true)
+![in game screen](https://github.com/manfriedn64/minesweeper64/blob/master/screenshots/game.png?raw=true)
+![game over screen](https://github.com/manfriedn64/minesweeper64/blob/master/screenshots/lose.png?raw=true)
+
 Here is a simple mine sweeper game for the N64. It's a first homebrew project in order to check the viability of a 640x480 high resolution 2D game for this hardware. Here with the largest game board (1200 sprites of 16x16 pixels) we can achieve at worst 15 frames per seconds when the menu is loaded too. So the conclusion is "maybe". Almost all the 4MB of RAM are used, Expansion Pak is detected just for fun, it's not needed.
 
 ## Compatibility
