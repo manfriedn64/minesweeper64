@@ -302,8 +302,6 @@ void createMines() {
 	for (i = 0; i < gamestate.board.nbrMines; i++) {
 		random = rand() / 32767.0 * (list.size-1); // pick one of the element in the list;
 		random_panel = findValueInList(&list, (int)random);
-		//x = random_panel->value % gamestate.board.height;
-		//y = random_panel->value / gamestate.board.height;
 		y = random_panel->value % gamestate.board.height;
 		x = random_panel->value / gamestate.board.height;
 		if (y < gamestate.board.height && x < gamestate.board.width) {
