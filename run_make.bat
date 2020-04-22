@@ -5,4 +5,5 @@ set gccsw=-mips3 -mgp32 -mfp32 -funsigned-char -D_LANGUAGE_C -D_ULTRA64 -D__EXTE
 set n64align=on
 set GCC_CELF=ON
 cd C:\Documents and Settings\Administrateur\Bureau\minesweeper64
+del *.o *.out
 make
