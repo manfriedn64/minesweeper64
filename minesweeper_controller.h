@@ -10,4 +10,7 @@ void controllerGameOver();
 void controllerExpansionPak();
 void readController();
 
+char konami[10];
+int konami_pos;
+
 #endif /* _MINESWEEPER_CONTROLLER_ */

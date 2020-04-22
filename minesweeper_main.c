@@ -232,6 +232,7 @@ void initGame() {
 			gamestate.board.items[y][x] = (Item){0, 0, 0, 0};
 	gamestate.allPanels = (Panel *) mt_malloc(BOARD_MAX_WIDTH * BOARD_MAX_HEIGHT * sizeof(Panel));
 	gamestate.debug = False;
+	gamestate.cheat = False;
 }
 
 
@@ -559,6 +560,9 @@ void drawDebug() {
 		nuDebConCPuts(0, conbuf);
 		nuDebConTextPos(0,25,9);
 		sprintf(conbuf, "Menu     : %d   ", gamestate.menu);
+		nuDebConCPuts(0, conbuf);
+		nuDebConTextPos(0,25,10);
+		sprintf(conbuf, "Cheat    : %d   ", gamestate.cheat);
 		nuDebConCPuts(0, conbuf);
 	}	
 }

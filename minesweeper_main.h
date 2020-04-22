@@ -124,6 +124,7 @@ typedef struct {
 	short			newHeight;
 	short			newMines;
 	Bool			debug;
+	Bool			cheat;
 	MoveObject*		animateTitle[4];
 } GameState;
 

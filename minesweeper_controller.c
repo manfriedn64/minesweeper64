@@ -7,6 +7,8 @@
 #include "assets/sounds/n64st1.h"
 
 NUContData contData[4];
+char konami[10] = "UUDDLRLRBA";
+int konami_pos = 0;
 
 void controllerInGame() {
 	short dPad = 0;
@@ -14,20 +16,22 @@ void controllerInGame() {
 	if (gamestate.menu == GAME_MENU_NONE)  {
 		/* dealing with joystick */
 		if (contData[0].stick_x > 16)
-			gamestate.cursorX += contData[0].stick_x / 4;
+			gamestate.cursorX += contData[0].stick_x / 24;
 		if (contData[0].stick_x < -16)
-			gamestate.cursorX += contData[0].stick_x / 4;
+			gamestate.cursorX += contData[0].stick_x / 24;
 		if (contData[0].stick_y > 16)
-			gamestate.cursorY -= contData[0].stick_y / 4;
+			gamestate.cursorY -= contData[0].stick_y / 24;
 		if (contData[0].stick_y < -16)
-			gamestate.cursorY -= contData[0].stick_y / 4;
+			gamestate.cursorY -= contData[0].stick_y / 24;
 		// compute which panel the cursor is targeting
-		gamestate.caseX = gamestate.cursorX / 16 - (40-gamestate.board.width)/2; // 40 is the maximum of 16px panels on a 640 screen width
-		gamestate.caseY = gamestate.cursorY / 16 - (30-gamestate.board.height)/2; // 30 is the maximum of 16px panels on a 480 screen height
+		gamestate.caseX = (int)((float)gamestate.cursorX / 16.0 - (40.0 - (float)gamestate.board.width) / 2.0); // 40 is the maximum of 16px panels on a 640 screen width
+		gamestate.caseY = (int)((float)gamestate.cursorY / 16.0 - (30.0 - (float)gamestate.board.height) /2.0); // 30 is the maximum of 16px panels on a 480 screen height
 		//reveal a panel if not flagged
 		if(contData[0].trigger & A_BUTTON && !gamestate.board.items[gamestate.caseY][gamestate.caseX].isFlagged) {
-			sndHandle = nuAuStlSndPlayerPlay(FX_FLAG);
-			revealPanel(gamestate.caseX, gamestate.caseY);
+			if (!gamestate.cheat || (gamestate.cheat && !gamestate.board.items[gamestate.caseY][gamestate.caseX].isBomb)) { // you can't lose if you cheat
+				sndHandle = nuAuStlSndPlayerPlay(FX_FLAG);
+				revealPanel(gamestate.caseX, gamestate.caseY);
+			}
 		}
 		// flag / unflag a panel
 		if(contData[0].trigger & B_BUTTON) {
@@ -252,6 +256,34 @@ void controllerExpansionPak() {
 		initGame();
 }
 
+void checkKonamiCode() {
+	char current = NULL;
+	if (contData[0].trigger & D_JPAD)
+		current = 'D';
+	if (contData[0].trigger & U_JPAD)
+		current = 'U';
+	if (contData[0].trigger & R_JPAD)
+		current = 'R';
+	if (contData[0].trigger & L_JPAD)
+		current = 'L';
+	if (contData[0].trigger & A_BUTTON)
+		current = 'A';
+	if (contData[0].trigger & B_BUTTON)
+		current = 'B';
+	if (current == konami[konami_pos])
+		konami_pos++;
+	else
+		if (current != NULL)
+			konami_pos = 0;
+	if (konami_pos > 9) {
+		if (!gamestate.cheat)
+			gamestate.cheat = True;
+		else
+			gamestate.cheat = False;
+		konami_pos = 0;
+	}
+}
+
 void readController() {
 	/* Read the controller data. */
 	nuContDataGetExAll(contData);
@@ -272,10 +304,6 @@ void readController() {
 		}
 		else
 			gamestate.debug = True;
-	/*nuDebConTextPos(0,25,1);
-	sprintf(conbuf, "Stick X  : %d    ", contData[0].stick_x);
-	nuDebConCPuts(0, conbuf);
-	nuDebConTextPos(0,25,2);
-	sprintf(conbuf, "Stick Y  : %d    ", contData[0].stick_y);
-	nuDebConCPuts(0, conbuf);*/
+	checkKonamiCode();
 }
+
