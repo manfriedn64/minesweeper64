@@ -1,6 +1,9 @@
 #ifndef _2DLIBRARY_
 #define _2DLIBRARY_
 
+#define MOVE_OBJECTS_LIMIT	10
+#define CENTER				-9999
+
 typedef enum
 { False = 0, True = 1 }
 Bool;
@@ -52,6 +55,16 @@ typedef struct {
 } Coordinates;
 
 typedef struct {
+	Coordinates		coordinates;
+	int				posX;
+	int 			posY;
+	int				destX;
+	int 			destY;
+	int				moveX;
+	int				moveY;
+} MoveObject;
+
+typedef struct {
 	short 		width;
 	short		height;
 	short		ratio;
@@ -60,10 +73,17 @@ typedef struct {
 
 
 void initMy2DLibrary(short width, short height);
+void moveObjectsListClear();
+MoveObject* getNextMoveObjects();
+Bool doMoveOject(MoveObject* moveobject);
 void drawSprite(int x, int y, Coordinates* coordinates);
 void drawBackGroundCoordinates(Coordinates* coordinates, short x, short y, short line);
 void drawFullBackGround(Texture* texture, short x, short y);
 
 My2DLibrary	my2dlibrary;
+
+MoveObject	moveOjectsList[MOVE_OBJECTS_LIMIT];
+MoveObject*	moveOjectsPointer;
+short		moveOjectsCount;
 
 #endif /* _2DLIBRARY_ */

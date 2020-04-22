@@ -10,6 +10,32 @@ void initMy2DLibrary(short width, short height) {
 	my2dlibrary.width					= width;
 	my2dlibrary.height					= height;
 	my2dlibrary.ratio					= 640 / width;
+	moveObjectsListClear();
+	return;
+}
+
+void moveObjectsListClear() {
+	moveOjectsCount = -1;
+}
+
+MoveObject* getNextMoveObjects() {
+	if (moveOjectsCount < MOVE_OBJECTS_LIMIT) {
+		moveOjectsPointer = &moveOjectsList[moveOjectsCount++];
+		return moveOjectsPointer;
+	}
+	return NULL;
+}
+
+Bool doMoveOject(MoveObject* moveobject) {
+	if (moveobject->destY == moveobject->posY && moveobject->destX == moveobject->posX)
+		return True;
+	else {
+		if (moveobject->destX != moveobject->posX)
+			moveobject->posX += moveobject->moveX;
+		if (moveobject->destY != moveobject->posY)
+			moveobject->posY += moveobject->moveY;
+		return False;
+	}
 }
 
 void drawSprite(int x, int y, Coordinates* coordinates) {
@@ -38,13 +64,14 @@ void drawSprite(int x, int y, Coordinates* coordinates) {
 	sprite->s.imageAdrs = GS_PIX2TMEM (coordinates->x + coordinates->y * 64, G_IM_SIZ_16b);
 	sprite->s.imageStride = GS_PIX2TMEM (coordinates->texture->width, G_IM_SIZ_16b);
 	gSPObjRectangle(gfxListPtr++, sprite);
+	return;
 }
 
 void drawBackGroundCoordinates(Coordinates* coordinates, short x, short y, short line) {
 	uObjBg* background = (uObjBg*)getNextObj();
-	if (x < 0)
+	if (x == CENTER)
 		x = my2dlibrary.width / 2 - coordinates->width / 2;
-	if (y < 0)
+	if (y == CENTER)
 		y = my2dlibrary.height / 2 - coordinates->height / 2;
 	background->b.imagePtr 	= coordinates->texture->pointer64;
 	background->b.frameX 		= x << 2;
@@ -57,10 +84,13 @@ void drawBackGroundCoordinates(Coordinates* coordinates, short x, short y, short
 	background->b.frameH 		= coordinates->height << 2;
 	guS2DInitBg(background);
 	gSPBgRectCopy(gfxListPtr++, background);	
+	return;
 }
 
 void drawFullBackGround(Texture* texture, short x, short y) {
-	Coordinates coordinates = (Coordinates){0, 0, texture, texture->width, texture->height};
-	//drawBackGround(texture, x, y, texture->width, texture->height, 0, 0);
-	drawBackGroundCoordinates(&coordinates, x, y, 0);
+	if (texture != NULL) {
+		Coordinates coordinates = (Coordinates){0, 0, texture, texture->width, texture->height};
+		drawBackGroundCoordinates(&coordinates, x, y, 0);
+	}
+	return;
 }

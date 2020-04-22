@@ -25,6 +25,8 @@ beginseg
         include "$(ROOT)/usr/lib/PR/gspF3DEX2.NoN.fifo.o"
         include "$(ROOT)/usr/lib/PR/gspF3DLX2.Rej.fifo.o"
 	include "$(ROOT)/usr/lib/PR/gspS2DEX2.fifo.o"
+	include "$(ROOT)/usr/lib/PR/aspMain.o"
+	include "$(ROOT)/usr/lib/PR/n_aspMain.o"
 endseg
 
 beginseg
@@ -36,6 +38,21 @@ beginseg
 	name	"titleName"
 	flags	RAW
 	include "assets/title/title_name.551"
+endseg
+beginseg
+	name	"loser"
+	flags	RAW
+	include "assets/title/loser.551"
+endseg
+beginseg
+	name	"youwin"
+	flags	RAW
+	include "assets/title/you_win.551"
+endseg
+beginseg
+	name	"pressStart"
+	flags	RAW
+	include "assets/title/press_start.551"
 endseg
 
 beginseg
@@ -110,10 +127,31 @@ endseg
 
 
 
+beginseg
+	name	"soundsWbk"
+	flags	RAW
+	include "assets/sounds/n64st1.wbk"
+endseg
+beginseg
+	name	"soundsSfx"
+	flags	RAW
+	include "assets/sounds/n64st1.bfx"
+endseg
+beginseg
+	name	"soundsPtr"
+	flags	RAW
+	include "assets/sounds/n64st1.ptr"
+endseg
+
+
+
 beginwave
 	name	"minesweeper"
 	include	"code"
 	include	"title64"
+	include	"loser"
+	include	"youwin"
+	include	"pressStart"
 	include	"titleName"
 	include	"tiles1"
 	include	"tiles1"
@@ -128,4 +166,8 @@ beginwave
 	include	"numbers"
 	include	"expansionpakBg"
 	include	"expansionpakTxt"
+	
+	include	"soundsWbk"
+	include	"soundsSfx"
+	include	"soundsPtr"
 endwave

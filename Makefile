@@ -16,6 +16,8 @@ NUSYSLIBDIR  = $(N64KITDIR)/nusys/lib
 NUSTDINCDIR  = $(N64KITDIR)/nustd/include
 NUSTDLIBDIR  = $(N64KITDIR)/nustd/lib
 
+NUAUDIOLIB = -lnualstl_n_d -ln_gmus_d -ln_gaudio_sc
+
 APP 		=	minesweeper.out
 
 OPTIMIZER 	=	-g
@@ -40,10 +42,10 @@ OBJECTS		=	$(CODESEGMENT) $(DATAOBJECTS)
 
 
 LCDEFS = 
-LCINCS =	-I. -I$(NUSYSINCDIR) -I$(NUSTDINCDIR)
-LDFLAGS =	$(MKDEPOPT) -nostdlib -L$(ROOT)/usr/lib   -L$(NUSYSLIBDIR) -L$(NUAULIBDIR) -lnusys_d  -lultra_d
+LCINCS =	-I. -I$(NUSYSINCDIR) -I$(NUSTDINCDIR) -I$(ROOT)/usr/include/PR
+LDFLAGS = $(MKDEPOPT) -L$(LIB) -L$(NUSYSLIBDIR) -L$(NUSTDLIBDIR) $(NUAUDIOLIB) -lnustd_d -lnusys_d -lgultra_rom -L$(GCCDIR)/mipse/lib -lkmc
+
 LCOPTS =	-G 0
-LDFLAGS =	$(MKDEPOPT) -L$(ROOT)/usr/lib  -lnusys_d -L$(NUSYSLIBDIR) -lgultra_d  -L$(GCCDIR)/mipse/lib -lkmc -L$(NUSTDLIBDIR) -lnustd
 		
 LDIRT  =	$(APP)
 

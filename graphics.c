@@ -111,7 +111,7 @@ void objListClear(void)
 
 uObjBg* getNextObj()
 {
-	if (objListCnt < OBJ_LIST_SIZE)
+	if (objListCnt < OBJ_LIST_SIZE) {
 		objListPrt = &objList[objListCnt++];
 		//objListPrt->b.imageLoad 	= G_BGLT_LOADBLOCK;
 		objListPrt->b.imageLoad 	= G_BGLT_LOADTILE;
@@ -120,6 +120,7 @@ uObjBg* getNextObj()
 		objListPrt->b.imagePal 		= 0;
 		objListPrt->b.imageFlip 	= 0;
 		return objListPrt;
+	}
 	return 0;
 }
 
@@ -197,7 +198,7 @@ void RCPInit() {
 	gDPSetTextureFilter(gfxListPtr++, G_TF_POINT);
 	
 	/* We always have a background to draw, so let's do it right now */
-	drawFullBackGround(gamestate.background, -1, -1);
+	drawFullBackGround(gamestate.background, CENTER, CENTER);
 	//nuDebConClear(0);
 }
 
@@ -219,6 +220,7 @@ void RCPEnd() {
 	nuDebConDisp(NU_SC_NOSWAPBUFFER);
 	
 	nuDebTaskPerfBar1(1, 480, NU_SC_SWAPBUFFER);
+	readController();
 	drawDebug();
 	
 	frame_number++;

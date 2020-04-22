@@ -3,6 +3,8 @@
 #include "minesweeper_main.h"
 #include "minesweeper_controller.h"
 #include <malloc.h>
+#include <nualstl_n.h>
+#include "assets/sounds/n64st1.h"
 
 NUContData contData[4];
 
@@ -12,22 +14,25 @@ void controllerInGame() {
 	if (gamestate.menu == GAME_MENU_NONE)  {
 		/* dealing with joystick */
 		if (contData[0].stick_x > 16)
-			gamestate.cursorX++;
+			gamestate.cursorX += contData[0].stick_x / 4;
 		if (contData[0].stick_x < -16)
-			gamestate.cursorX--;
+			gamestate.cursorX += contData[0].stick_x / 4;
 		if (contData[0].stick_y > 16)
-			gamestate.cursorY--;
+			gamestate.cursorY -= contData[0].stick_y / 4;
 		if (contData[0].stick_y < -16)
-			gamestate.cursorY++;
+			gamestate.cursorY -= contData[0].stick_y / 4;
 		// compute which panel the cursor is targeting
 		gamestate.caseX = gamestate.cursorX / 16 - (40-gamestate.board.width)/2; // 40 is the maximum of 16px panels on a 640 screen width
 		gamestate.caseY = gamestate.cursorY / 16 - (30-gamestate.board.height)/2; // 30 is the maximum of 16px panels on a 480 screen height
 		//reveal a panel if not flagged
-		if(contData[0].trigger & A_BUTTON && !gamestate.board.items[gamestate.caseY][gamestate.caseX].isFlagged)
+		if(contData[0].trigger & A_BUTTON && !gamestate.board.items[gamestate.caseY][gamestate.caseX].isFlagged) {
+			sndHandle = nuAuStlSndPlayerPlay(FX_FLAG);
 			revealPanel(gamestate.caseX, gamestate.caseY);
+		}
 		// flag / unflag a panel
-		if(contData[0].trigger & B_BUTTON){
-			if (!gamestate.board.items[gamestate.caseY][gamestate.caseX].isFlagged)
+		if(contData[0].trigger & B_BUTTON) {
+			sndHandle = nuAuStlSndPlayerPlay(FX_UNFLAG);
+			if (!gamestate.board.items[gamestate.caseY][gamestate.caseX].isFlagged) 
 				gamestate.board.items[gamestate.caseY][gamestate.caseX].isFlagged = 1;
 			else
 				gamestate.board.items[gamestate.caseY][gamestate.caseX].isFlagged = 0;
@@ -212,7 +217,7 @@ void controllerTitle() {
 	if (gamestate.menu == GAME_MENU_NEW) 
 		controllerNewGame();
 	// press start to configure a new game
-	else if (gamestate.menu == GAME_MENU_NONE) 
+	else if (gamestate.menu == GAME_MENU_NONE)  {
 		if(contData[0].trigger & START_BUTTON) {
 			gamestate.menu = GAME_MENU_NEW;
 			gamestate.caseY = 0;
@@ -221,6 +226,10 @@ void controllerTitle() {
 			gamestate.newHeight = gamestate.board.height;
 			gamestate.newMines = gamestate.board.nbrMines;
 		}
+	}
+	else if (gamestate.menu == GAME_ANIMATION) 
+		if (contData[0].trigger & A_BUTTON) 
+			gamestate.menu = GAME_MENU_NONE;
 }
 
 void controllerGameOver() {
@@ -234,12 +243,12 @@ void controllerGameOver() {
 			gamestate.newMines = gamestate.board.nbrMines;		
 		}
 	}
-	else if(gamestate.menu == GAME_MENU_NEW)
+	else if (gamestate.menu == GAME_MENU_NEW)
 		controllerNewGame();		
 }
 
 void controllerExpansionPak() {
-	if (contData[0].trigger & START_BUTTON) 
+	if (contData[0].trigger & START_BUTTON)
 		initGame();
 }
 
@@ -251,7 +260,7 @@ void readController() {
 		controllerInGame();
 	else if (gamestate.status == GAME_STATUS_TITLE)
 		controllerTitle();
-	else if (gamestate.status == GAME_STATUS_OVER) 
+	else if (gamestate.status == GAME_STATUS_OVER || gamestate.status == GAME_STATUS_WON) 
 		controllerGameOver();
 	else if (gamestate.status == GAME_STATUS_EXPPAK) 
 		controllerExpansionPak();
@@ -263,4 +272,10 @@ void readController() {
 		}
 		else
 			gamestate.debug = True;
+	/*nuDebConTextPos(0,25,1);
+	sprintf(conbuf, "Stick X  : %d    ", contData[0].stick_x);
+	nuDebConCPuts(0, conbuf);
+	nuDebConTextPos(0,25,2);
+	sprintf(conbuf, "Stick Y  : %d    ", contData[0].stick_y);
+	nuDebConCPuts(0, conbuf);*/
 }

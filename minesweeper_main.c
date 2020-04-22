@@ -9,6 +9,8 @@
 #include "minesweeper_main.h"
 #include "2dlibrary.h"
 #include <malloc.h>
+#include <nualstl_n.h>
+#include "assets/sounds/n64st1.h"
 
 //extern Texture textures[20];
 extern GameState gamestate;
@@ -43,6 +45,29 @@ void initExpansionPak() {
 	gamestate.text[TEXT_EXPANSIONPAK]		= (Coordinates){0,  0, &textures[1],   304, 61};
 }
 
+void setEndGameTitles() {
+	textures[0].romStart	= (u32)_loserSegmentRomStart;
+	textures[0].romEnd		= (u32)_loserSegmentRomEnd;
+	textures[0].pointer32	= (u32*)TITLE_LOSER_ADDRESS;
+	textures[0].width		= 624;
+	textures[0].height		= 173;
+	textures[0].pointer64	= (u64*)textures[0].pointer32;
+	textures[0].romSize		= textures[0].romEnd - textures[0].romStart;
+	nuPiReadRom(textures[0].romStart, textures[0].pointer32, textures[0].romSize);
+	
+	textures[3].romStart	= (u32)_youwinSegmentRomStart;
+	textures[3].romEnd		= (u32)_youwinSegmentRomEnd;
+	textures[3].pointer32	= (u32*)TITLE_YOUWIN_ADDRESS;
+	textures[3].width		= 592;
+	textures[3].height		= 101;
+	textures[3].pointer64	= (u64*)textures[3].pointer32;
+	textures[3].romSize		= textures[3].romEnd - textures[3].romStart;
+	nuPiReadRom(textures[3].romStart, textures[3].pointer32, textures[3].romSize);
+	gamestate.title64		= NULL;
+	gamestate.titleName		= NULL;
+	gamestate.loser			= &textures[0];
+	gamestate.youwin		= &textures[3];
+}
 /*
 	Initiate graphical elements common within all themes
 */
@@ -126,8 +151,15 @@ void initGame() {
 	textures[11].height		= 136;
 	textures[11].malloc		= True;
 	
+	textures[12].romStart	= (u32)_pressStartSegmentRomStart;
+	textures[12].romEnd		= (u32)_pressStartSegmentRomEnd;
+	textures[12].pointer32	= (u32*)PRESS_START_ADDRESS;
+	textures[12].width		= 144;
+	textures[12].height		= 26;
+	textures[12].malloc		= False;
+	
 	// now loading from ROM to RAM
-	for (i = 0; i <= 14; i++) {
+	for (i = 0; i <= 12; i++) {
 		if (textures[i].malloc)
 			textures[i].pointer32	= (u32*) mt_malloc(textures[i].width * textures[i].height * 2 * sizeof(char));
 		textures[i].pointer64	= (u64*)textures[i].pointer32;
@@ -187,8 +219,12 @@ void initGame() {
 	gamestate.background	= &textures[4];
 	gamestate.menuTitle		= &textures[5];
 	gamestate.menuTexture	= &textures[6];
+	gamestate.pressStart	= &textures[12];
+	gamestate.loser			= NULL;
+	gamestate.youwin		= NULL;
 	gamestate.status = GAME_STATUS_TITLE;
-	gamestate.menu = GAME_MENU_NONE; 
+	gamestate.menu = GAME_ANIMATION; 
+	initAnimateTitle();
 	gamestate.cursorX = 1;
 	gamestate.cursorY = 1;
 	for (x = 0; x <  BOARD_MAX_WIDTH; x++)
@@ -300,6 +336,7 @@ void setBoard() {
 	createMines();
 	gamestate.cursorX = my2dlibrary.width / 2;
 	gamestate.cursorY = my2dlibrary.height / 2;
+	setEndGameTitles();
 }
 
 void revealPanel(short x, short y) {
@@ -307,9 +344,13 @@ void revealPanel(short x, short y) {
 	if (x >= 0 && x < gamestate.board.width && y >= 0 && y < gamestate.board.height)
 		if (!gamestate.board.items[y][x].isRevealed) {
 			gamestate.board.items[y][x].isRevealed = 1;
-			if (gamestate.board.items[y][x].isBomb == 1)
+			if (gamestate.board.items[y][x].isBomb == 1) {
+				sndHandle = nuAuStlSndPlayerPlay(FX_EXPLODE);
 				gamestate.status = GAME_STATUS_OVER;
+			}
 			gamestate.board.nbrLeftToCheck--;
+			if (gamestate.board.nbrLeftToCheck == gamestate.board.nbrMines && gamestate.status != GAME_STATUS_OVER)
+				gamestate.status = GAME_STATUS_WON;
 			tempX = x;
 			tempY = y;
 			/*if (gamestate.board.items[y][x].number == 0)
@@ -340,7 +381,7 @@ void drawNumber(short top, short right, short number, short line) {
 }
 
 void drawMenuCredits() {
-	drawFullBackGround(gamestate.menuTexture, -1, -1);
+	drawFullBackGround(gamestate.menuTexture, CENTER, CENTER);
 }
 
 void drawMenuNew() {
@@ -348,8 +389,8 @@ void drawMenuNew() {
 	left  = my2dlibrary.width / 2 - gamestate.menuTexture->width  / 2 + 140 / my2dlibrary.ratio;
 	right = my2dlibrary.width / 2 + gamestate.menuTexture->width  / 2 - 140 / my2dlibrary.ratio;
 	top   = my2dlibrary.height / 2 - gamestate.menuTexture->height / 2 + 90 / my2dlibrary.ratio;
-	drawFullBackGround(gamestate.menuTexture, -1, -1);
-	drawBackGroundCoordinates(&gamestate.text[TEXT_MENU_NEW], -1, my2dlibrary.height / 2 - gamestate.menuTexture->height/2  + 22, 0);	
+	drawFullBackGround(gamestate.menuTexture, CENTER, CENTER);
+	drawBackGroundCoordinates(&gamestate.text[TEXT_MENU_NEW], CENTER, my2dlibrary.height / 2 - gamestate.menuTexture->height/2  + 22, 0);	
 	
 	drawBackGroundCoordinates(&gamestate.text[TEXT_WIDTH], left, top, 0);
 	drawBackGroundCoordinates(&gamestate.buttons[BUTTON_LARGE], right - gamestate.buttons[BUTTON_LARGE].width, top - ((gamestate.buttons[BUTTON_LARGE].height-gamestate.text[TEXT_WIDTH].height) / 2), (gamestate.caseY == 0 ? 1 : 0));
@@ -373,15 +414,15 @@ void drawMenuPause() {
 	left  = my2dlibrary.width / 2 - gamestate.menuTexture->width  / 2 + 160 / my2dlibrary.ratio;
 	right = my2dlibrary.width / 2 + gamestate.menuTexture->width  / 2 - 160 / my2dlibrary.ratio;
 	top   = my2dlibrary.height / 2 - gamestate.menuTexture->height / 2 + 115 / my2dlibrary.ratio;
-	drawFullBackGround(gamestate.menuTexture, -1, -1);
-	drawBackGroundCoordinates(&gamestate.text[TEXT_MENU_PAUSE], -1, my2dlibrary.height / 2 - gamestate.menuTexture->height/2  + 22, 0);	
+	drawFullBackGround(gamestate.menuTexture, CENTER, CENTER);
+	drawBackGroundCoordinates(&gamestate.text[TEXT_MENU_PAUSE], CENTER, my2dlibrary.height / 2 - gamestate.menuTexture->height/2  + 22, 0);	
 	drawBackGroundCoordinates(&gamestate.text[TEXT_RESUME], left - gamestate.text[TEXT_RESUME].width / 2, top, (gamestate.caseY == 0 && gamestate.caseX == 0 ? 1 : 0));
 	drawBackGroundCoordinates(&gamestate.text[TEXT_RESTART], right - gamestate.text[TEXT_RESTART].width / 2, top, (gamestate.caseY == 0 && gamestate.caseX == 1 ? 1 : 0));
 	top += 60 / my2dlibrary.ratio;
 	drawBackGroundCoordinates(&gamestate.text[TEXT_NEWGAME], left - gamestate.text[TEXT_NEWGAME].width / 2, top, (gamestate.caseY == 1 && gamestate.caseX == 0 ? 1 : 0));
 	drawBackGroundCoordinates(&gamestate.text[TEXT_REVEAL], right - gamestate.text[TEXT_REVEAL].width / 2, top, (gamestate.caseY == 1 && gamestate.caseX == 1 ? 1 : 0));
 	top += 60 / my2dlibrary.ratio;
-	drawBackGroundCoordinates(&gamestate.text[TEXT_CREDITS], -1, top, (gamestate.caseY == 2 ? 1 : 0));
+	drawBackGroundCoordinates(&gamestate.text[TEXT_CREDITS], CENTER, top, (gamestate.caseY == 2 ? 1 : 0));
 }
 
 void drawTile(int x, int y, Item* value) {
@@ -438,19 +479,16 @@ void drawTile(int x, int y, Item* value) {
 
 
 void drawExpansionPak() {
-	/*drawFullBackGround(gamestate.title64, -1, -1);
-	drawFullBackGround(gamestate.titleName, -1, -1);*/
-	//drawBackGroundCoordinates(&gamestate.text[TEXT_EXPANSIONPAK], -1, -1, 0);
 	if (memory_size == 0x00800000)
-		drawBackGroundCoordinates(&gamestate.text[TEXT_EXPANSIONPAK], -1, -1, 1);
+		drawBackGroundCoordinates(&gamestate.text[TEXT_EXPANSIONPAK], CENTER, CENTER, 1);
 	else
-		drawBackGroundCoordinates(&gamestate.text[TEXT_EXPANSIONPAK], -1, -1, 0);
-	//drawFullBackGround(&textures[1], -1, -1);
+		drawBackGroundCoordinates(&gamestate.text[TEXT_EXPANSIONPAK], CENTER, CENTER, 0);
 }
 
 void drawTitle() {
-	drawFullBackGround(gamestate.title64, -1, -1);
-	drawFullBackGround(gamestate.titleName, -1, -1);
+	drawFullBackGround(gamestate.title64, CENTER, CENTER);
+	drawFullBackGround(gamestate.titleName, CENTER, CENTER);
+	drawFullBackGround(gamestate.pressStart, CENTER, my2dlibrary.height / 2 + gamestate.title64->height/2 + 10 );
 }
 
 void drawTiles() {
@@ -462,71 +500,117 @@ void drawTiles() {
 			drawTile(centerX+x*16, centerY+y*16, &gamestate.board.items[y][x]);
 }
 
+void drawGameOver() {
+	drawTiles();
+	if (gamestate.status == GAME_STATUS_OVER)
+		drawFullBackGround(gamestate.loser, CENTER, CENTER);
+	else
+		drawFullBackGround(gamestate.youwin, CENTER, CENTER);
+}
 
 /*
 	WARNING : somehow it seems to crash the game is activated while board size is big
 	funny to see debug mode to induce a bug :) I guess there is a good reason.
 */
 void drawDebug() {
+	u64 time_elapsed_u64;
+	float time_elapsed_float;
+	int fps;
 	if (gamestate.debug)  {
+		// compute how much time elapsed since the last time we were here
+		time_elapsed_u64 = osGetTime();
+		time_elapsed_float = (float)(OS_CYCLES_TO_USEC(time_elapsed_u64-time_lastframe)/1000)/1000;
+		fps = 1 / time_elapsed_float;
+		// set the last frame variable to now()
+		time_lastframe = time_elapsed_u64;
+		
 		nuDebConTextAttr(0, NU_DEB_CON_ATTR_BLINK);
-		nuDebConTextColor(0, NU_DEB_CON_TEXT_WHITE);
+		nuDebConTextColor(0, NU_DEB_CON_TEXT_RED);
+		
 		nuDebConTextPos(0, 17,1);
 		nuDebConPuts(0, "Running");
 		nuDebConTextAttr(0, NU_DEB_CON_ATTR_NORMAL);
-	
-		
-		nuDebConTextPos(0,3,21);
-		sprintf(conbuf, "End of code : 0x%X", _codeSegmentEnd);
-		nuDebConCPuts(0, conbuf);
-		nuDebConTextPos(0,3,22);
-		sprintf(conbuf, "BACKGROUND_ADDRESS : 0x%X", BACKGROUND_ADDRESS);
-		nuDebConCPuts(0, conbuf);
-		nuDebConTextPos(0,3,23);
-		sprintf(conbuf, "ZBUFFER : 0x%X", ZBUFFER_ADDR);
-		nuDebConCPuts(0, conbuf);
-		nuDebConTextPos(0,3,24);
-		sprintf(conbuf, "FBUFFER start : 0x%X", CFB_HIGH_ADDR0);
-		nuDebConCPuts(0, conbuf);
-		
 
-		nuDebConTextPos(0,3,26);
-		sprintf(conbuf, "Frame Number : %d", frame_number);
+		nuDebConTextColor(0, NU_DEB_CON_TEXT_YELLOW);
+		nuDebConTextPos(0,25,1);
+		sprintf(conbuf, "FPS      : %d  ", fps);
 		nuDebConCPuts(0, conbuf);
-		nuDebConTextPos(0,3,27);
-		sprintf(conbuf, "Random : %f", random);
+		nuDebConTextColor(0, NU_DEB_CON_TEXT_WHITE);
+		nuDebConTextPos(0,25,2);
+		sprintf(conbuf, "Time     : %llu ", OS_CYCLES_TO_USEC(time_elapsed_u64)/1000000);
 		nuDebConCPuts(0, conbuf);
-		nuDebConTextPos(0,3,28);
-		sprintf(conbuf, "Seed : %d", osGetCount() % 10000000);
+		nuDebConTextPos(0,25,3);
+		sprintf(conbuf, "TV Type  : %d    ", osTvType);
 		nuDebConCPuts(0, conbuf);
-		
-		
-		
-		nuDebConTextPos(0,3,2);
-		sprintf(conbuf, "Panel : %d      ", sizeof(Panel));
-		nuDebConCPuts(0, conbuf);
-		nuDebConTextPos(0,3,4);
-		sprintf(conbuf, "TV Type : %d      ", osTvType);
-		nuDebConCPuts(0, conbuf);
-		
-		nuDebConTextPos(0,25,5);
+		nuDebConTextPos(0,25,4);
 		sprintf(conbuf, "Cursor X : %d   ", gamestate.cursorX);
 		nuDebConCPuts(0, conbuf);
-		nuDebConTextPos(0,25,6);
+		nuDebConTextPos(0,25,5);
 		sprintf(conbuf, "Cursor Y : %d   ", gamestate.cursorY);
 		nuDebConCPuts(0, conbuf);
-		nuDebConTextPos(0,25,7);
+		nuDebConTextPos(0,25,6);
 		sprintf(conbuf, "Case X   : %d   ", gamestate.caseX);
 		nuDebConCPuts(0, conbuf);
-		nuDebConTextPos(0,25,8);
+		nuDebConTextPos(0,25,7);
 		sprintf(conbuf, "Case Y   : %d   ", gamestate.caseY);
 		nuDebConCPuts(0, conbuf);
-		
-		nuDebConTextPos(0,25,9);
+		nuDebConTextPos(0,25,8);
 		sprintf(conbuf, "Status   : %d   ", gamestate.status);
 		nuDebConCPuts(0, conbuf);
-		nuDebConTextPos(0,25,10);
+		nuDebConTextPos(0,25,9);
 		sprintf(conbuf, "Menu     : %d   ", gamestate.menu);
 		nuDebConCPuts(0, conbuf);
 	}	
+}
+
+void initAnimateTitle() {
+	gamestate.animateTitle[0] = getNextMoveObjects();
+	gamestate.animateTitle[0]-> posX = my2dlibrary.width / 2 - gamestate.title64->width / 2;
+	gamestate.animateTitle[0]-> destY = my2dlibrary.height / 2 - gamestate.title64->height/2;
+	gamestate.animateTitle[0]-> posY = gamestate.animateTitle[0]-> destY - gamestate.titleName->width;
+	gamestate.animateTitle[0]-> moveX = 0;
+	gamestate.animateTitle[0]-> moveY = 1;
+	gamestate.animateTitle[0]-> destX = gamestate.animateTitle[0]-> posX;
+	gamestate.animateTitle[0]-> coordinates = (Coordinates){0, 0, gamestate.title64, 227, 285};
+
+	gamestate.animateTitle[1] = getNextMoveObjects();
+	gamestate.animateTitle[1]-> destY = my2dlibrary.height / 2 - gamestate.title64->height/2;
+	gamestate.animateTitle[1]-> posX = my2dlibrary.width / 2 + gamestate.title64->width / 2 - 240;
+	gamestate.animateTitle[1]-> posY = gamestate.animateTitle[1]-> destY + gamestate.titleName->width;
+	gamestate.animateTitle[1]-> moveX = 0;
+	gamestate.animateTitle[1]-> moveY = -1;
+	gamestate.animateTitle[1]-> destX = gamestate.animateTitle[1]-> posX;
+	gamestate.animateTitle[1]-> coordinates = (Coordinates){248, 0, gamestate.title64, 240, 285};
+	
+	gamestate.animateTitle[2] = getNextMoveObjects();
+	gamestate.animateTitle[2]-> posX = gamestate.titleName->width * -1;
+	gamestate.animateTitle[2]-> posY = my2dlibrary.height / 2 - gamestate.titleName->height/2;
+	gamestate.animateTitle[2]-> moveX = 1;
+	gamestate.animateTitle[2]-> moveY = 0;
+	gamestate.animateTitle[2]-> destX = my2dlibrary.width / 2 - gamestate.titleName->width / 2;
+	gamestate.animateTitle[2]-> destY = gamestate.animateTitle[2]-> posY;
+	gamestate.animateTitle[2]-> coordinates = (Coordinates){0, 0, gamestate.titleName, gamestate.titleName->width, gamestate.titleName->height/2};
+	gamestate.animateTitle[3] = getNextMoveObjects();
+
+	gamestate.animateTitle[3]-> posX = my2dlibrary.width;
+	gamestate.animateTitle[3]-> posY = my2dlibrary.height / 2;
+	gamestate.animateTitle[3]-> moveX = -1;
+	gamestate.animateTitle[3]-> moveY = 0;
+	gamestate.animateTitle[3]-> destX = my2dlibrary.width / 2 - gamestate.titleName->width / 2;
+	gamestate.animateTitle[3]-> destY = gamestate.animateTitle[3]-> posY;
+	gamestate.animateTitle[3]-> coordinates = (Coordinates){0, 0, gamestate.titleName, gamestate.titleName->width, gamestate.titleName->height/2};
+}
+
+void animateTitle() {
+	Bool title6, title4, name1, name2;
+	title6 = doMoveOject(gamestate.animateTitle[0]);
+	title4 = doMoveOject(gamestate.animateTitle[1]);
+	name1  = doMoveOject(gamestate.animateTitle[2]);
+	name2  = doMoveOject(gamestate.animateTitle[3]);
+	drawBackGroundCoordinates(&gamestate.animateTitle[0]->coordinates, gamestate.animateTitle[0]->posX, gamestate.animateTitle[0]->posY, 0);
+	drawBackGroundCoordinates(&gamestate.animateTitle[1]->coordinates, gamestate.animateTitle[1]->posX, gamestate.animateTitle[1]->posY, 0);
+	drawBackGroundCoordinates(&gamestate.animateTitle[2]->coordinates, gamestate.animateTitle[2]->posX, gamestate.animateTitle[2]->posY, 0);
+	drawBackGroundCoordinates(&gamestate.animateTitle[3]->coordinates, gamestate.animateTitle[3]->posX, gamestate.animateTitle[3]->posY, 1);
+	if (title4 && title6 && name1 && name2)
+		gamestate.menu = GAME_MENU_NONE;
 }
