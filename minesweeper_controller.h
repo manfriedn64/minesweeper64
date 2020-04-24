@@ -10,6 +10,9 @@ void controllerGameOver();
 void controllerExpansionPak();
 void readController();
 
+void externalDevicesInit();
+
+
 char konami[10];
 int konami_pos;
 

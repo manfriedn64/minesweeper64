@@ -7,8 +7,21 @@
 #include "assets/sounds/n64st1.h"
 
 NUContData contData[4];
+
 char konami[10] = "UUDDLRLRBA";
 int konami_pos = 0;
+
+void externalDevicesInit() {
+	s32 ret;
+	int controller_number = 0; // one player so we only check for player one's controller, otherwise loop from 0 to MAXCONTROLLERS
+	
+	ret = nuContRmbCheck(controller_number);
+	if (!ret) {
+		gamestate.rumble = True;
+		nuContRmbModeSet(controller_number, NU_CONT_RMB_MODE_ENABLE);
+		nuContRmbStart(controller_number, 128, 10);
+	}
+}
 
 void controllerInGame() {
 	short dPad = 0;
@@ -29,13 +42,15 @@ void controllerInGame() {
 		//reveal a panel if not flagged
 		if(contData[0].trigger & A_BUTTON && !gamestate.board.items[gamestate.caseY][gamestate.caseX].isFlagged) {
 			if (!gamestate.cheat || (gamestate.cheat && !gamestate.board.items[gamestate.caseY][gamestate.caseX].isBomb)) { // you can't lose if you cheat
-				sndHandle = nuAuStlSndPlayerPlay(FX_FLAG);
+				if (memory_size == 0x00800000 && !gamestate.board.items[gamestate.caseY][gamestate.caseX].isRevealed )
+					sndHandle = nuAuStlSndPlayerPlay(FX_FLAG);
 				revealPanel(gamestate.caseX, gamestate.caseY);
 			}
 		}
 		// flag / unflag a panel
 		if(contData[0].trigger & B_BUTTON) {
-			sndHandle = nuAuStlSndPlayerPlay(FX_UNFLAG);
+			if (memory_size == 0x00800000)
+				sndHandle = nuAuStlSndPlayerPlay(FX_UNFLAG);
 			if (!gamestate.board.items[gamestate.caseY][gamestate.caseX].isFlagged) 
 				gamestate.board.items[gamestate.caseY][gamestate.caseX].isFlagged = 1;
 			else
@@ -232,14 +247,13 @@ void controllerTitle() {
 		}
 	}
 	else if (gamestate.menu == GAME_ANIMATION) 
-		if (contData[0].trigger & A_BUTTON) 
+		if (contData[0].trigger & START_BUTTON || contData[0].trigger & A_BUTTON)
 			gamestate.menu = GAME_MENU_NONE;
 }
 
 void controllerGameOver() {
 	if (gamestate.menu == GAME_MENU_NONE) {
 		if (contData[0].trigger & START_BUTTON) {
-			//gamestate.status = GAME_STATUS_TITLE;
 			gamestate.menu = GAME_MENU_NEW;
 			gamestate.caseX = 0;
 			gamestate.newWidth = gamestate.board.width;
@@ -252,7 +266,7 @@ void controllerGameOver() {
 }
 
 void controllerExpansionPak() {
-	if (contData[0].trigger & START_BUTTON)
+	if (contData[0].trigger & START_BUTTON || contData[0].trigger & A_BUTTON)
 		initGame();
 }
 

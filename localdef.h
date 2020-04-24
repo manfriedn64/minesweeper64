@@ -75,4 +75,7 @@ int ptr_buf[];
 int sfx_buf[];
 musHandle sndHandle;
 
+//OSMesgQueue	n_siMessageQ;
+u8 contPattern;
+
 #endif /* _LOCALDEF_H_*/

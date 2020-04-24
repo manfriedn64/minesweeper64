@@ -29,7 +29,7 @@ void initExpansionPak() {
 	textures[1].romEnd		= (u32)_expansionpakTxtSegmentRomEnd;
 	textures[1].pointer32	= (u32*)BACKGROUND_ADDRESS-(textures[1].romEnd-textures[1].romStart);
 	textures[1].width		= 304;
-	textures[1].height		= 122;
+	textures[1].height		= 154;
 	
 	for (i = 0; i <= 1; i++) {
 		textures[i].pointer64	= (u64*)textures[i].pointer32;
@@ -42,7 +42,7 @@ void initExpansionPak() {
 	gamestate.cursorY = 1;
 	gamestate.debug = False;
 	gamestate.background	= &textures[0];
-	gamestate.text[TEXT_EXPANSIONPAK]		= (Coordinates){0,  0, &textures[1],   304, 61};
+	gamestate.text[TEXT_EXPANSIONPAK]		= (Coordinates){0,  0, &textures[1],   304, 77};
 }
 
 void setEndGameTitles() {
@@ -212,18 +212,24 @@ void initGame() {
 	gamestate.buttons[BUTTON_LARGE]	= (Coordinates){  3, 0, &textures[10],145, 55};
 	// set coordinates in textures for font letters
 	// set game status
-	gamestate.backgroundPosition 	= 0;
-	gamestate.backgroundColor	= (Rgb){160, 240, 216};
-	gamestate.title64		= &textures[0];
-	gamestate.titleName		= &textures[3];
-	gamestate.background	= &textures[4];
-	gamestate.menuTitle		= &textures[5];
-	gamestate.menuTexture	= &textures[6];
-	gamestate.pressStart	= &textures[12];
-	gamestate.loser			= NULL;
-	gamestate.youwin		= NULL;
-	gamestate.status = GAME_STATUS_TITLE;
-	gamestate.menu = GAME_ANIMATION; 
+	gamestate.backgroundPosition	= 0;
+	gamestate.backgroundColor		= (Rgb){160, 240, 216};
+	gamestate.title64				= &textures[0];
+	gamestate.titleName				= &textures[3];
+	gamestate.background			= &textures[4];
+	gamestate.menuTitle				= &textures[5];
+	gamestate.menuTexture			= &textures[6];
+	gamestate.pressStart			= &textures[12];
+	gamestate.loser					= NULL;
+	gamestate.youwin				= NULL;
+	gamestate.debug					= False;
+	gamestate.cheat					= False;
+	gamestate.rumble				= False;
+	gamestate.board.width			= 20;
+	gamestate.board.height			= 15;
+	gamestate.board.nbrMines		= 10;
+	gamestate.status				= GAME_STATUS_TITLE;
+	gamestate.menu					= GAME_ANIMATION; 
 	initAnimateTitle();
 	gamestate.cursorX = 1;
 	gamestate.cursorY = 1;
@@ -231,8 +237,6 @@ void initGame() {
 		for (y = 0; y < BOARD_MAX_HEIGHT; y++) 
 			gamestate.board.items[y][x] = (Item){0, 0, 0, 0};
 	gamestate.allPanels = (Panel *) mt_malloc(BOARD_MAX_WIDTH * BOARD_MAX_HEIGHT * sizeof(Panel));
-	gamestate.debug = False;
-	gamestate.cheat = False;
 }
 
 
@@ -336,6 +340,8 @@ void setBoard() {
 	gamestate.cursorX = my2dlibrary.width / 2;
 	gamestate.cursorY = my2dlibrary.height / 2;
 	setEndGameTitles();
+	
+	externalDevicesInit(); // check for rumble pak
 }
 
 void revealPanel(short x, short y) {
@@ -344,12 +350,20 @@ void revealPanel(short x, short y) {
 		if (!gamestate.board.items[y][x].isRevealed) {
 			gamestate.board.items[y][x].isRevealed = 1;
 			if (gamestate.board.items[y][x].isBomb == 1) {
-				sndHandle = nuAuStlSndPlayerPlay(FX_EXPLODE);
+				if (memory_size == 0x00800000)
+					sndHandle = nuAuStlSndPlayerPlay(FX_EXPLODE);
+				if (gamestate.rumble) // activate rumble while exploding
+					nuContRmbStart(0, 256, 80); 
 				gamestate.status = GAME_STATUS_OVER;
 			}
+			else if (gamestate.board.items[y][x].number > 0 && gamestate.rumble) // activate rumble if close to a bomb
+				nuContRmbStart(0, 64, 40);
 			gamestate.board.nbrLeftToCheck--;
-			if (gamestate.board.nbrLeftToCheck == gamestate.board.nbrMines && gamestate.status != GAME_STATUS_OVER)
+			if (gamestate.board.nbrLeftToCheck == gamestate.board.nbrMines && gamestate.status != GAME_STATUS_OVER) {
+				if (memory_size == 0x00800000)
+					sndHandle = nuAuStlSndPlayerPlay(FX_WINNING);
 				gamestate.status = GAME_STATUS_WON;
+			}
 			tempX = x;
 			tempY = y;
 			/*if (gamestate.board.items[y][x].number == 0)
@@ -561,6 +575,12 @@ void drawDebug() {
 		nuDebConCPuts(0, conbuf);
 		nuDebConTextPos(0,25,10);
 		sprintf(conbuf, "Cheat    : %d   ", gamestate.cheat);
+		nuDebConCPuts(0, conbuf);
+		nuDebConTextPos(0,25,11);
+		sprintf(conbuf, "Rumble   : %d   ", gamestate.rumble);
+		nuDebConCPuts(0, conbuf);
+		nuDebConTextPos(0,25,12);
+		sprintf(conbuf, "pattern  : %d   ", contPattern);
 		nuDebConCPuts(0, conbuf);
 	}	
 }

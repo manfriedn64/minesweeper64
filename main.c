@@ -37,6 +37,8 @@ extern char mem_heap[1024*300];
 
 extern u32 memory_size;
 
+
+extern u8 contPattern;
 /*----------------------------------------------------------------------*/
 /*	Game startup. 											*/
 /*	IN:	Nothing in particular. 							  	*/
@@ -44,19 +46,23 @@ extern u32 memory_size;
 /*----------------------------------------------------------------------*/
 void mainproc(void* arg)
 {
-	// expansion pak detection is useless as long as memory usage is lower that 4MB. But I wanted to do it anyway.
+	// expansion pak detection. Needed to play sounds as I was running out of RAM for this feature
 	memory_size = osGetMemSize();
+	
+	// variable initialization used to count frames per second
 	time_lastframe = 0;
 	frame_number = 0;
 	
-	// initialize sound
-	initAudio();
+	// initialize sound if expansion pak is available
+	if (memory_size == 0x00800000)
+		initAudio();
 	
 	/* Initialize graphics */
 	nuGfxInit();
 	random = rand();
 	/* Initialize the controller */
-	nuContInit();
+	contPattern = nuContInit();
+	nuContQueryRead();
 	
 	 /* Set VI */
 	 osCreateViManager(OS_PRIORITY_VIMGR);
@@ -187,7 +193,7 @@ void initAudio(void)
     c.sched = NULL; // The address of the Scheduler structure. NuSystem uses NULL
     c.thread_priority = NU_AU_MGR_THREAD_PRI; // Thread priority (highest)
     //c.heap = (unsigned char*)AUDIO_HEAP_ADDR; // Heap address
-    c.heap = (unsigned char*)_codeSegmentEnd; // Heap address
+    c.heap = (unsigned char*)AUDIO_HEAP_ADDR; // Heap address
     c.heap_length = NU_AU_HEAP_SIZE; // Heap size
     c.ptr = NULL; // Allows you to set a default ptr file
     c.wbk = NULL; // Allows you to set a default wbk file
