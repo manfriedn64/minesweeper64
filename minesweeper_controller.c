@@ -25,36 +25,43 @@ void externalDevicesInit() {
 
 void controllerInGame() {
 	short dPad = 0;
-	int x, y;
+	int x, y, i, divider;
 	if (gamestate.menu == GAME_MENU_NONE)  {
-		/* dealing with joystick */
-		if (contData[0].stick_x > 16)
-			gamestate.cursorX += contData[0].stick_x / 24;
-		if (contData[0].stick_x < -16)
-			gamestate.cursorX += contData[0].stick_x / 24;
-		if (contData[0].stick_y > 16)
-			gamestate.cursorY -= contData[0].stick_y / 24;
-		if (contData[0].stick_y < -16)
-			gamestate.cursorY -= contData[0].stick_y / 24;
-		// compute which panel the cursor is targeting
-		gamestate.caseX = (int)((float)gamestate.cursorX / 16.0 - (40.0 - (float)gamestate.board.width) / 2.0); // 40 is the maximum of 16px panels on a 640 screen width
-		gamestate.caseY = (int)((float)gamestate.cursorY / 16.0 - (30.0 - (float)gamestate.board.height) /2.0); // 30 is the maximum of 16px panels on a 480 screen height
-		//reveal a panel if not flagged
-		if(contData[0].trigger & A_BUTTON && !gamestate.board.items[gamestate.caseY][gamestate.caseX].isFlagged) {
-			if (!gamestate.cheat || (gamestate.cheat && !gamestate.board.items[gamestate.caseY][gamestate.caseX].isBomb)) { // you can't lose if you cheat
-				if (memory_size == 0x00800000 && !gamestate.board.items[gamestate.caseY][gamestate.caseX].isRevealed )
-					sndHandle = nuAuStlSndPlayerPlay(FX_FLAG);
-				revealPanel(gamestate.caseX, gamestate.caseY);
-			}
-		}
-		// flag / unflag a panel
-		if(contData[0].trigger & B_BUTTON) {
-			if (memory_size == 0x00800000)
-				sndHandle = nuAuStlSndPlayerPlay(FX_UNFLAG);
-			if (!gamestate.board.items[gamestate.caseY][gamestate.caseX].isFlagged) 
-				gamestate.board.items[gamestate.caseY][gamestate.caseX].isFlagged = 1;
+		/*  loop on all available controller for any movement => is mouse is plugged in any controller it will work */
+		for (i = 0; i < NU_CONT_MAXCONTROLLERS; i++) {
+			// dealing with joystick 
+			if (i > 1)
+				divider = 1;
 			else
-				gamestate.board.items[gamestate.caseY][gamestate.caseX].isFlagged = 0;
+				divider = 24;
+			if (contData[i].stick_x > 16)
+				gamestate.cursorX += contData[i].stick_x / divider;
+			if (contData[i].stick_x < -16)
+				gamestate.cursorX += contData[i].stick_x / divider;
+			if (contData[i].stick_y > 16)
+				gamestate.cursorY -= contData[i].stick_y / divider;
+			if (contData[i].stick_y < -16)
+				gamestate.cursorY -= contData[i].stick_y / divider;
+			// compute which panel the cursor is targeting
+			gamestate.caseX = (int)((float)gamestate.cursorX / 16.0 - (40.0 - (float)gamestate.board.width) / 2.0); // 40 is the maximum of 16px panels on a 640 screen width
+			gamestate.caseY = (int)((float)gamestate.cursorY / 16.0 - (30.0 - (float)gamestate.board.height) /2.0); // 30 is the maximum of 16px panels on a 480 screen height
+			//reveal a panel if not flagged
+			if(contData[i].trigger & A_BUTTON && !gamestate.board.items[gamestate.caseY][gamestate.caseX].isFlagged) {
+				if (!gamestate.cheat || (gamestate.cheat && !gamestate.board.items[gamestate.caseY][gamestate.caseX].isBomb)) { // you can't lose if you cheat
+					if (memory_size == 0x00800000 && !gamestate.board.items[gamestate.caseY][gamestate.caseX].isRevealed )
+						sndHandle = nuAuStlSndPlayerPlay(FX_FLAG);
+					revealPanel(gamestate.caseX, gamestate.caseY);
+				}
+			}
+			// flag / unflag a panel
+			if(contData[i].trigger & B_BUTTON) {
+				if (memory_size == 0x00800000)
+					sndHandle = nuAuStlSndPlayerPlay(FX_UNFLAG);
+				if (!gamestate.board.items[gamestate.caseY][gamestate.caseX].isFlagged) 
+					gamestate.board.items[gamestate.caseY][gamestate.caseX].isFlagged = 1;
+				else
+					gamestate.board.items[gamestate.caseY][gamestate.caseX].isFlagged = 0;
+			}
 		}
 		/* dealing with dpad */
 		if (contData[0].trigger & R_JPAD) {
@@ -115,16 +122,16 @@ void controllerInGame() {
 }
 
 void controllerNewGame() {
-	if (contData[0].trigger & D_JPAD || (contData[0].trigger && contData[0].stick_y > 16))
+	if (contData[0].trigger & D_JPAD || (contData[0].stick_y > 32))
 		gamestate.caseY++;
-	if (contData[0].trigger & U_JPAD || (contData[0].trigger && contData[0].stick_y < -16))
+	if (contData[0].trigger & U_JPAD || (contData[0].stick_y < -32))
 		gamestate.caseY--;
 	if (gamestate.caseY > 3)
 		gamestate.caseY = 0;
 	if (gamestate.caseY < 0)
 		gamestate.caseY = 3;
 	
-	if (contData[0].trigger & R_JPAD) {
+	if (contData[0].trigger & R_JPAD || (contData[0].stick_x > 32)) {
 		if (gamestate.caseY == 0)
 			gamestate.newWidth++;
 		if (gamestate.caseY == 1)
@@ -132,7 +139,7 @@ void controllerNewGame() {
 		if (gamestate.caseY == 2)
 			gamestate.newMines++;
 	}
-	if (contData[0].trigger & L_JPAD) {
+	if (contData[0].trigger & L_JPAD || (contData[0].stick_x < -32)) {
 		if (gamestate.caseY == 0)
 			gamestate.newWidth--;
 		if (gamestate.caseY == 1)
@@ -161,13 +168,13 @@ void controllerNewGame() {
 
 void controllerPause() {
 	short x, y;
-	if (contData[0].trigger & D_JPAD || (contData[0].trigger && contData[0].stick_y > 16))
+	if (contData[0].trigger & D_JPAD || (contData[0].stick_y > 32))
 		gamestate.caseY++;
-	if (contData[0].trigger & U_JPAD || (contData[0].trigger && contData[0].stick_y < -16))
+	if (contData[0].trigger & U_JPAD || (contData[0].stick_y < -32))
 		gamestate.caseY--;
-	if (contData[0].trigger & R_JPAD || (contData[0].trigger && contData[0].stick_x > 16))
+	if (contData[0].trigger & R_JPAD || (contData[0].stick_x > 32))
 		gamestate.caseX++;
-	if (contData[0].trigger & L_JPAD || (contData[0].trigger && contData[0].stick_x < -16))
+	if (contData[0].trigger & L_JPAD || (contData[0].stick_x < -32))
 		gamestate.caseX--;
 	if (gamestate.caseY > 2)
 		gamestate.caseY = 0;
@@ -237,7 +244,7 @@ void controllerTitle() {
 		controllerNewGame();
 	// press start to configure a new game
 	else if (gamestate.menu == GAME_MENU_NONE)  {
-		if(contData[0].trigger & START_BUTTON) {
+		if(contData[0].trigger & START_BUTTON || contData[0].trigger & A_BUTTON) {
 			gamestate.menu = GAME_MENU_NEW;
 			gamestate.caseY = 0;
 			gamestate.caseX = 0;
@@ -253,7 +260,7 @@ void controllerTitle() {
 
 void controllerGameOver() {
 	if (gamestate.menu == GAME_MENU_NONE) {
-		if (contData[0].trigger & START_BUTTON) {
+		if (contData[0].trigger & START_BUTTON || contData[0].trigger & A_BUTTON) {
 			gamestate.menu = GAME_MENU_NEW;
 			gamestate.caseX = 0;
 			gamestate.newWidth = gamestate.board.width;
