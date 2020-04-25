@@ -1,10 +1,3 @@
-/*======================================================================*/
-/*		NuSYS high resolution sample					 		*/
-/*		main.c								  		*/
-/*												  	*/
-/*		Copyright (C) 1997, NINTENDO Co, Ltd.			 		*/
-/*		  97/12/08	Created by Kensaku Ohki(SLANP)			*/
-/*======================================================================*/  
 #include <nusys.h>
 #include "localdef.h"
 #include "minesweeper_main.h"

@@ -1,10 +1,3 @@
-/*======================================================================*/
-/*		NuSYS high resolution sample						  	*/
-/*		graphics.c											*/
-/*												   	*/
-/*		Copyright (C) 1997, NINTENDO Co,Ltd.			  	*/
-/*		  97/12/08	Created by Kensaku Ohki(SLANP)			*/
-/*======================================================================*/
 #include <nusys.h>
 #include <PR/gs2dex.h>
 #include "localdef.h"
